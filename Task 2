@@ -1,0 +1,57 @@
+import nltk
+from nltk.corpus import movie_reviews
+import random
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+from nltk.probability import FreqDist
+from nltk.classify import NaiveBayesClassifier
+from nltk.classify.util import accuracy
+
+# Step 1: Download and load the dataset
+nltk.download('movie_reviews')
+
+# Load the movie reviews dataset
+documents = [(list(movie_reviews.words(fileid)), category)
+             for category in movie_reviews.categories()
+             for fileid in movie_reviews.fileids(category)]
+
+# Shuffle the data to ensure random distribution
+random.shuffle(documents)
+
+# Step 2: Feature extraction
+def word_features(words):
+    return {word: True for word in words}
+
+# Create feature sets
+feature_sets = [(word_features(words), category) for (words, category) in documents]
+
+# Split data into training and testing sets
+train_set, test_set = train_test_split(feature_sets, test_size=0.3, random_state=42)
+
+# Step 3: Train the Naive Bayes Classifier
+classifier = NaiveBayesClassifier.train(train_set)
+
+# Step 4: Evaluate the model
+accuracy = nltk.classify.accuracy(classifier, test_set)
+print(f"Model Accuracy: {accuracy * 100:.2f}%")
+
+# Show the most informative features
+classifier.show_most_informative_features(10)
+
+# Step 5: Test with custom input
+def predict_sentiment(text):
+    words = text.split()
+    features = word_features(words)
+    return classifier.classify(features)
+
+# Test the model
+print("Custom Predictions:")
+print(f"Sentiment for 'This movie was amazing and full of thrill': {predict_sentiment('This movie was amazing and full of thrill')}")
+print(f"Sentiment for 'I hated this movie, it was a waste of time': {predict_sentiment('I hated this movie, it was a waste of time')}")
+
+# Optional: Evaluate model using classification report
+true_labels = [label for (features, label) in test_set]
+predicted_labels = [classifier.classify(features) for (features, label) in test_set]
+
+print("\nClassification Report:")
+print(classification_report(true_labels, predicted_labels))
